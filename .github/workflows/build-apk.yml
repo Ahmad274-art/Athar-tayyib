@@ -1,1 +1,67 @@
 
+name: Build Athar Tayyib APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "athar-tayyib-capacitor.zip"
+      - ".github/workflows/build-apk.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get repository files
+        uses: actions/checkout@v4
+
+      - name: Extract project ZIP
+        run: unzip -q athar-tayyib-capacitor.zip
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install dependencies
+        working-directory: athar-tayyib-capacitor
+        run: npm install
+
+      - name: Create Android project
+        working-directory: athar-tayyib-capacitor
+        run: npx cap add android
+
+      - name: Generate app icons
+        working-directory: athar-tayyib-capacitor
+        run: npx capacitor-assets generate --android
+
+      - name: Prepare Android app
+        working-directory: athar-tayyib-capacitor
+        run: node scripts/prepare-android.mjs
+
+      - name: Sync app files
+        working-directory: athar-tayyib-capacitor
+        run: npx cap sync android
+
+      - name: Build APK
+        working-directory: athar-tayyib-capacitor
+        run: |
+          chmod +x android/gradlew
+          cd android
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: athar-tayyib-apk
+          path: athar-tayyib-capacitor/android/app/build/outputs/apk/debug/app-debug.apk
