@@ -1,0 +1,27 @@
+name: Create signing key (run once)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate-key:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate Keystore
+        run: |
+          keytool -genkey -v -keystore masrufi.jks -keyalg RSA -keysize 2048 -validity 10000 -alias masrufi -storepass password123 -keypass password123 -dname "CN=Android, O=Android, C=US"
+          
+          # Encode files to base64 for secrets
+          base64 masrufi.jks > KEYSTORE_BASE64.txt
+          echo -n "password123" > KEYSTORE_PASSWORD.txt
+          echo -n "masrufi" > KEY_ALIAS.txt
+
+      - name: Upload Keystore Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: masrufi-signing-key
+          path: |
+            masrufi.jks
+            KEYSTORE_BASE64.txt
+            KEYSTORE_PASSWORD.txt
+            KEY_ALIAS.txt
